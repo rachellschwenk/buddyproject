@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffcf4a">
+  <title>I Love My Buddy</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --ink: #fff4d6;
+      --paper: #0d2852;
+      --pink: #f36f62;
+      --blue: #277d80;
+      --cream: #fff4d6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100svh;
+      margin: 0;
+      overflow: hidden;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#fff4d626 1.25px, transparent 1.25px);
+      background-size: 24px 24px;
+      font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+    }
+
+    .stage {
+      position: relative;
+      display: grid;
+      min-height: 100svh;
+      place-items: center;
+      isolation: isolate;
+    }
+
+    .ambient-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .ambient-heart {
+      position: absolute;
+      bottom: -2rem;
+      left: var(--heart-left);
+      color: var(--heart-color);
+      font-size: var(--heart-size);
+      line-height: 1;
+      opacity: 0;
+      animation: ambient-rise var(--heart-duration) linear var(--heart-delay) infinite;
+    }
+
+    .portrait-field {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .floating-buddy {
+      position: absolute;
+      width: clamp(28px, 4.5vw, 58px);
+      aspect-ratio: 1;
+      padding: 0;
+      border: 3px solid var(--cream);
+      border-radius: 50%;
+      background: var(--cream);
+      box-shadow: 0 0 0 2px var(--ink), 3px 5px 0 #173b3a70;
+      animation: portrait-drift var(--float-duration) ease-in-out var(--float-delay) infinite;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .floating-buddy img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .floating-buddy:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 5px;
+    }
+
+    .floating-buddy.is-bouncing {
+      z-index: 1;
+      animation: buddy-bounce 950ms cubic-bezier(.22, .75, .25, 1) both;
+    }
+
+    .words {
+      position: absolute;
+      inset: -8% -3%;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, max-content);
+      grid-auto-rows: 1fr;
+      align-content: space-between;
+      justify-content: space-between;
+      gap: clamp(1.2rem, 4vw, 4rem) clamp(1rem, 4vw, 4.5rem);
+      overflow: hidden;
+      transform: rotate(-8deg) scale(1.12);
+      pointer-events: none;
+    }
+
+    .words span {
+      align-self: center;
+      color: var(--ink);
+      font-size: clamp(1.05rem, 2.1vw, 2rem);
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .words span:nth-child(4n + 1) { color: #ff8290; }
+    .words span:nth-child(4n + 2) { transform: rotate(7deg); }
+    .words span:nth-child(4n + 3) { color: #79ddd5; transform: rotate(-5deg); }
+    .words span:nth-child(4n) { font-family: 'DM Mono', monospace; font-size: clamp(.8rem, 1.5vw, 1.2rem); }
+
+    .centerpiece {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      width: min(78vw, 460px);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      background: repeating-conic-gradient(from -7deg, #ffbc68 0deg 10deg, #f58b60 10deg 20deg);
+      box-shadow: 0 0 0 8px var(--cream), 0 0 0 11px var(--ink), 12px 14px 0 11px var(--ink);
+      animation: bob 2.8s ease-in-out infinite;
+    }
+
+    .orbit {
+      position: absolute;
+      inset: 8%;
+      border: 2px solid #173b3a80;
+      border-radius: 50%;
+      animation: spin 18s linear infinite;
+    }
+
+    .orbit::before, .orbit::after {
+      position: absolute;
+      width: 18px;
+      aspect-ratio: 1;
+      border: 3px solid var(--ink);
+      border-radius: 35% 50% 35% 50%;
+      background: var(--cream);
+      box-shadow: 2px 2px 0 var(--ink);
+      transform: rotate(45deg);
+      content: '';
+    }
+
+    .orbit::before { top: 11%; left: 8%; }
+    .orbit::after { right: 3%; bottom: 19%; background: var(--blue); }
+
+    .buddy {
+      position: relative;
+      width: 58%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 5px solid var(--cream);
+      border-radius: 50%;
+      background: var(--cream);
+      box-shadow: 0 0 0 4px var(--ink), 7px 9px 0 4px #173b3a60;
+      animation: spin 10s cubic-bezier(.45, 0, .55, 1) infinite;
+    }
+
+    .buddy img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .head {
+      position: absolute;
+      top: 1%;
+      left: 50%;
+      width: 56%;
+      height: 32%;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 44% 46% 41% 41%;
+      background: linear-gradient(115deg, #f5c994 8%, #edb27c 62%, #d99165 100%);
+      box-shadow: inset -11px -8px 0 #d99165, 0 3px 0 #173b3a45;
+      transform: translateX(-50%);
+    }
+
+    .hair {
+      position: absolute;
+      top: -10%;
+      left: -5%;
+      width: 110%;
+      height: 45%;
+      border-bottom: 3px solid var(--ink);
+      border-radius: 48% 53% 37% 20%;
+      background: linear-gradient(145deg, #534238 0 14%, #252322 37% 100%);
+      transform: rotate(-7deg);
+    }
+
+    .hair::before {
+      position: absolute;
+      top: 16%;
+      left: 31%;
+      width: 45%;
+      height: 33%;
+      border-radius: 80% 12% 60% 10%;
+      background: #302923;
+      transform: rotate(-28deg);
+      content: '';
+    }
+
+    .hair::after {
+      position: absolute;
+      right: 15%;
+      bottom: -8px;
+      width: 27%;
+      height: 30%;
+      border-radius: 50%;
+      background: #252322;
+      content: '';
+    }
+
+    .glasses {
+      position: absolute;
+      top: 43%;
+      left: 12%;
+      display: flex;
+      width: 76%;
+      height: 18%;
+      justify-content: space-between;
+    }
+
+    .glasses::before, .glasses::after {
+      width: 43%;
+      border: 2px solid #182421;
+      border-radius: 40% 40% 44% 44%;
+      background: #d6f2ec38;
+      box-shadow: inset 0 2px 2px #ffffff60;
+      content: '';
+    }
+
+    .bridge {
+      position: absolute;
+      top: 50%;
+      left: 46%;
+      width: 8%;
+      height: 3px;
+      background: var(--ink);
+    }
+
+    .eyes {
+      position: absolute;
+      top: 49%;
+      left: 24%;
+      width: 52%;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .eyes::before, .eyes::after {
+      width: 5px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--ink);
+      box-shadow: 0 0 0 1px #fff5dc70;
+      content: '';
+    }
+
+    .brows {
+      position: absolute;
+      top: 38%;
+      left: 23%;
+      display: flex;
+      width: 54%;
+      justify-content: space-between;
+    }
+
+    .brows::before, .brows::after {
+      width: 31%;
+      height: 3px;
+      border-radius: 50%;
+      background: #352923;
+      content: '';
+    }
+
+    .brows::before { transform: rotate(-8deg); }
+    .brows::after { transform: rotate(8deg); }
+
+    .cheeks {
+      position: absolute;
+      top: 60%;
+      left: 12%;
+      display: flex;
+      width: 76%;
+      justify-content: space-between;
+    }
+
+    .cheeks::before, .cheeks::after {
+      width: 17%;
+      height: 7px;
+      border-radius: 50%;
+      background: #d77b7045;
+      content: '';
+    }
+
+    .smile {
+      position: absolute;
+      top: 63%;
+      left: 42%;
+      width: 16%;
+      height: 7%;
+      border-bottom: 2px solid #7c3e34;
+      border-radius: 0 0 50% 50%;
+    }
+
+    .nose {
+      position: absolute;
+      top: 55%;
+      left: 48%;
+      width: 10%;
+      height: 11%;
+      border-right: 2px solid #a66349;
+      border-bottom: 2px solid #a66349;
+      border-radius: 0 0 8px;
+    }
+
+    .beard {
+      position: absolute;
+      right: 4%;
+      bottom: -2%;
+      left: 4%;
+      height: 34%;
+      border: 3px solid var(--ink);
+      border-top: 0;
+      border-radius: 12% 12% 48% 48%;
+      background: #302a28;
+      clip-path: polygon(0 0, 20% 10%, 34% 0, 50% 14%, 67% 0, 82% 10%, 100% 0, 91% 69%, 72% 94%, 50% 100%, 27% 93%, 8% 69%);
+    }
+
+    .beard::after {
+      position: absolute;
+      top: 4%;
+      left: 38%;
+      width: 25%;
+      height: 12%;
+      border-radius: 0 0 50% 50%;
+      background: #edb27c;
+      content: '';
+    }
+
+    .arm {
+      position: absolute;
+      z-index: 1;
+      top: 33%;
+      width: 19%;
+      height: 29%;
+      border: 3px solid var(--ink);
+      border-radius: 45% 45% 35% 35%;
+      background: linear-gradient(90deg, #17484c 0 20%, #29818a 20% 80%, #17484c 80%);
+      box-shadow: inset 4px 0 0 #ffffff28, inset -4px 0 0 #00000022;
+    }
+
+    .arm::after {
+      position: absolute;
+      bottom: -12%;
+      left: 13%;
+      width: 74%;
+      height: 22%;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: #f0b982;
+      content: '';
+    }
+
+    .torso::after {
+      position: absolute;
+      top: 0;
+      left: 24%;
+      width: 52%;
+      height: 39%;
+      background: #f0e5d3;
+      clip-path: polygon(0 0, 50% 56%, 100% 0, 70% 100%, 50% 61%, 30% 100%);
+      content: '';
+    }
+
+    .arm-left { left: 7%; transform: rotate(13deg); }
+    .arm-right { right: 7%; transform: rotate(-13deg); }
+
+    .torso {
+      position: absolute;
+      z-index: 2;
+      top: 27%;
+      left: 22%;
+      width: 56%;
+      height: 39%;
+      border: 3px solid var(--ink);
+      border-radius: 36% 36% 12% 12%;
+      background: linear-gradient(90deg, #17484c 0 23%, #a83348 23% 77%, #17484c 77%);
+      box-shadow: inset 5px 0 0 #ffffff24, inset -5px 0 0 #00000024;
+    }
+
+    .torso::before {
+      position: absolute;
+      top: -2px;
+      left: 35%;
+      width: 30%;
+      height: 18%;
+      border: 2px solid var(--ink);
+      border-top: 0;
+      border-radius: 0 0 50% 50%;
+      background: #f0b982;
+      content: '';
+    }
+
+    .pants {
+      position: absolute;
+      z-index: 2;
+      top: 62%;
+      left: 27%;
+      width: 46%;
+      height: 18%;
+      border: 3px solid var(--ink);
+      border-radius: 5% 5% 18% 18%;
+      background: linear-gradient(90deg, #263846, #405b68 48%, #263846);
+      box-shadow: inset 0 5px 0 #182b35;
+    }
+
+    .pants::after {
+      position: absolute;
+      top: -5px;
+      left: 39%;
+      width: 22%;
+      height: 8px;
+      border: 2px solid var(--ink);
+      border-radius: 0 0 4px 4px;
+      background: #edbd57;
+      content: '';
+    }
+
+    .leg {
+      position: absolute;
+      z-index: 1;
+      top: 76%;
+      width: 19%;
+      height: 19%;
+      border: 3px solid var(--ink);
+      border-radius: 8% 8% 18% 18%;
+      background: linear-gradient(90deg, #263846, #405b68 48%, #263846);
+    }
+
+    .leg-left { left: 28%; transform: rotate(3deg); }
+    .leg-right { right: 28%; transform: rotate(-3deg); }
+
+    .leg::after {
+      position: absolute;
+      right: -22%;
+      bottom: -4%;
+      left: -15%;
+      height: 24%;
+      border: 2px solid var(--ink);
+      border-radius: 45% 55% 24% 24%;
+      background: #252322;
+      content: '';
+    }
+
+    .badge {
+      position: absolute;
+      right: 8%;
+      bottom: 12%;
+      display: grid;
+      width: 21%;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--blue);
+      font-size: clamp(1.4rem, 4vw, 2.5rem);
+      transform: rotate(12deg);
+    }
+
+    .caption {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      z-index: 2;
+      padding: .55rem 1rem;
+      border: 2px solid #173b3a;
+      background: var(--cream);
+      color: #173b3a;
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(.72rem, 2vw, .95rem);
+      text-align: center;
+      text-transform: uppercase;
+      transform: translateX(-50%) rotate(-2deg);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bob { 50% { translate: 0 -9px; } }
+    @keyframes ambient-rise {
+      0% { opacity: 0; transform: translate3d(0, 7vh, 0) rotate(0) scale(.6); }
+      12%, 82% { opacity: .78; }
+      100% { opacity: 0; transform: translate3d(var(--heart-drift), -112vh, 0) rotate(220deg) scale(1.12); }
+    }
+    @keyframes portrait-drift {
+      0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
+      50% { transform: translate3d(var(--float-x), var(--float-y), 0) rotate(8deg); }
+    }
+    @keyframes buddy-bounce {
+      0% { transform: translate3d(0, 0, 0) scale(1) rotate(0); }
+      16% { transform: translate3d(var(--bounce-x), var(--bounce-y), 0) scale(1.2) rotate(13deg); }
+      34% { transform: translate3d(var(--bounce-return-x), var(--bounce-return-y), 0) scale(.9) rotate(-11deg); }
+      56% { transform: translate3d(var(--bounce-second-x), var(--bounce-second-y), 0) scale(1.12) rotate(8deg); }
+      76% { transform: translate3d(var(--bounce-second-return-x), var(--bounce-second-return-y), 0) scale(.96) rotate(-5deg); }
+      100% { transform: translate3d(0, 0, 0) scale(1) rotate(0); }
+    }
+
+    .heart-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      display: none;
+      color: #d34662;
+      font-size: 42px;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      filter: drop-shadow(1px 2px 0 var(--ink));
+      transform: translate(-50%, -50%) rotate(-14deg);
+    }
+
+    .heart-cursor.is-visible { opacity: 1; }
+
+    .heart-particle {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
+      color: var(--particle-color, #d34662);
+      font-size: var(--particle-size, 30px);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      filter: drop-shadow(1px 1px 0 var(--ink));
+      animation: heart-flight 900ms cubic-bezier(.16, .8, .3, 1) forwards;
+    }
+
+    @keyframes heart-flight {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(.35) rotate(0); }
+      15% { opacity: 1; }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--drift-x)), calc(-50% + var(--drift-y))) scale(.45) rotate(var(--rotation));
+      }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      body { cursor: none; }
+      .floating-buddy { cursor: none; }
+      .heart-cursor { display: block; }
+    }
+
+    @media (max-width: 560px) {
+      .words { grid-template-columns: repeat(3, max-content); }
+      .centerpiece { width: min(82vw, 360px); }
+      .caption { bottom: 4%; width: max-content; max-width: 88vw; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="I love my buddy">
+    <div class="ambient-layer" aria-hidden="true"></div>
+    <div class="words" aria-hidden="true">
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+      <span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span><span>I LOVE MY BUDDY</span>
+    </div>
+    <div class="portrait-field" role="group" aria-label="Floating buddy photos">
+    </div>
+    <div class="centerpiece">
+      <div class="orbit" aria-hidden="true"></div>
+      <div class="buddy">
+        <img src="evan-schwenk.jpg" alt="Evan Schwenk wearing glasses and a navy jacket">
+      </div>
+      <div class="badge" aria-hidden="true">♥</div>
+    </div>
+    <div class="caption" aria-hidden="true">Evan Schwenk ✦ buddy appreciation club</div>
+  </main>
+  <div class="heart-cursor" aria-hidden="true">♥</div>
+  <script>
+    const heartCursor = document.querySelector('.heart-cursor');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const particleColors = ['#d34662', '#f36f62', '#277d80', '#fff4d6'];
+    const ambientLayer = document.querySelector('.ambient-layer');
+    const portraitField = document.querySelector('.portrait-field');
+    const buddyPortrait = document.querySelector('.buddy img');
+    const portraitSpots = [
+      { left: '4%', top: '5%' }, { left: '23%', top: '3%' }, { left: '44%', top: '7%' }, { right: '23%', top: '4%' }, { right: '4%', top: '8%' },
+      { left: '2%', top: '21%' }, { right: '2%', top: '25%' }, { left: '4%', top: '39%' }, { right: '3%', top: '43%' },
+      { left: '2%', top: '59%' }, { right: '3%', top: '63%' }, { left: '5%', bottom: '5%' }, { left: '24%', bottom: '3%' },
+      { left: '45%', bottom: '7%' }, { right: '22%', bottom: '4%' }, { right: '4%', bottom: '8%' },
+      { left: '2%', top: '78%' }, { right: '2%', top: '80%' }, { left: '15%', top: '14%' }, { right: '15%', top: '15%' },
+      { left: '1%', top: '31%' }, { right: '1%', top: '34%' }, { left: '7%', top: '49%' }, { right: '7%', top: '51%' },
+      { left: '12%', top: '66%' }, { right: '12%', top: '68%' }, { left: '16%', bottom: '17%' }, { right: '16%', bottom: '19%' },
+      { left: '34%', top: '9%' }, { right: '34%', top: '10%' }
+    ];
+    let lastTrailX = null;
+    let lastTrailY = null;
+    let activeParticles = 0;
+
+    portraitSpots.forEach((spot, index) => {
+      const portrait = buddyPortrait.cloneNode();
+      const floatingBuddy = document.createElement('button');
+      floatingBuddy.type = 'button';
+      floatingBuddy.className = 'floating-buddy';
+      floatingBuddy.setAttribute('aria-label', `Bounce Evan Schwenk photo ${index + 1}`);
+      portrait.alt = '';
+      floatingBuddy.append(portrait);
+      Object.entries(spot).forEach(([edge, value]) => {
+        floatingBuddy.style[edge] = value;
+      });
+      const horizontalTravel = Math.min(window.innerWidth * .3, 210);
+      const verticalTravel = Math.min(window.innerHeight * .24, 190);
+      floatingBuddy.style.setProperty('--float-x', `${Math.random() * horizontalTravel - horizontalTravel / 2}px`);
+      floatingBuddy.style.setProperty('--float-y', `${Math.random() * verticalTravel - verticalTravel / 2}px`);
+      floatingBuddy.style.setProperty('--float-duration', `${4 + Math.random() * 4.5}s`);
+      floatingBuddy.style.setProperty('--float-delay', `${-Math.random() * 8}s`);
+      portraitField.append(floatingBuddy);
+    });
+
+    portraitField.addEventListener('click', (event) => {
+      const floatingBuddy = event.target.closest('.floating-buddy');
+      if (!floatingBuddy || reducedMotion) return;
+
+      if (floatingBuddy.classList.contains('is-bouncing')) {
+        floatingBuddy.classList.remove('is-bouncing');
+        void floatingBuddy.offsetWidth;
+      }
+
+      const bounceX = Math.random() * 130 - 65;
+      const bounceY = Math.random() * 130 - 65;
+      const secondBounceX = Math.random() * 90 - 45;
+      const secondBounceY = Math.random() * 90 - 45;
+      floatingBuddy.style.setProperty('--bounce-x', `${bounceX}px`);
+      floatingBuddy.style.setProperty('--bounce-y', `${bounceY}px`);
+      floatingBuddy.style.setProperty('--bounce-return-x', `${bounceX * -.55}px`);
+      floatingBuddy.style.setProperty('--bounce-return-y', `${bounceY * -.55}px`);
+      floatingBuddy.style.setProperty('--bounce-second-x', `${secondBounceX}px`);
+      floatingBuddy.style.setProperty('--bounce-second-y', `${secondBounceY}px`);
+      floatingBuddy.style.setProperty('--bounce-second-return-x', `${secondBounceX * -.45}px`);
+      floatingBuddy.style.setProperty('--bounce-second-return-y', `${secondBounceY * -.45}px`);
+      floatingBuddy.classList.add('is-bouncing');
+      floatingBuddy.addEventListener('animationend', (animationEvent) => {
+        if (animationEvent.animationName === 'buddy-bounce') floatingBuddy.classList.remove('is-bouncing');
+      }, { once: true });
+    });
+
+    if (!reducedMotion) {
+      for (let index = 0; index < 18; index += 1) {
+        const ambientHeart = document.createElement('span');
+        const heartDuration = 10 + Math.random() * 10;
+        ambientHeart.className = 'ambient-heart';
+        ambientHeart.textContent = '♥';
+        ambientHeart.style.setProperty('--heart-left', `${Math.random() * 98}%`);
+        ambientHeart.style.setProperty('--heart-size', `${24 + Math.random() * 24}px`);
+        ambientHeart.style.setProperty('--heart-color', particleColors[Math.floor(Math.random() * particleColors.length)]);
+        ambientHeart.style.setProperty('--heart-duration', `${heartDuration}s`);
+        ambientHeart.style.setProperty('--heart-delay', `${-Math.random() * heartDuration}s`);
+        ambientHeart.style.setProperty('--heart-drift', `${Math.random() * 90 - 45}px`);
+        ambientLayer.append(ambientHeart);
+      }
+    }
+
+    function spawnHeart(x, y, burstIndex = 0, burstCount = 0) {
+      if (activeParticles >= 48) return;
+
+      const angle = burstCount
+        ? (Math.PI * 2 * burstIndex / burstCount) + (Math.random() - .5) * .35
+        : Math.random() * Math.PI * 2;
+      const distance = burstCount ? 45 + Math.random() * 65 : 14 + Math.random() * 24;
+      const particle = document.createElement('span');
+      particle.className = 'heart-particle';
+      particle.setAttribute('aria-hidden', 'true');
+      particle.textContent = '♥';
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      particle.style.setProperty('--drift-x', `${Math.cos(angle) * distance}px`);
+      particle.style.setProperty('--drift-y', `${Math.sin(angle) * distance - 22}px`);
+      particle.style.setProperty('--rotation', `${Math.random() * 90 - 45}deg`);
+      const particleSize = burstCount ? 27 + Math.random() * 25 : 20 + Math.random() * 14;
+      particle.style.setProperty('--particle-size', `${particleSize}px`);
+      particle.style.setProperty('--particle-color', particleColors[Math.floor(Math.random() * particleColors.length)]);
+      document.body.append(particle);
+      activeParticles += 1;
+      particle.addEventListener('animationend', () => {
+        particle.remove();
+        activeParticles -= 1;
+      }, { once: true });
+    }
+
+    function spawnPageBurst() {
+      if (reducedMotion || document.hidden) return;
+      const margin = Math.min(72, Math.min(window.innerWidth, window.innerHeight) * .15);
+      const burstX = margin + Math.random() * (window.innerWidth - margin * 2);
+      const burstY = margin + Math.random() * (window.innerHeight - margin * 2);
+      for (let index = 0; index < 12; index += 1) {
+        spawnHeart(burstX, burstY, index, 12);
+      }
+    }
+
+    spawnPageBurst();
+    window.setInterval(spawnPageBurst, 650);
+
+    document.addEventListener('pointermove', (event) => {
+      heartCursor.style.left = `${event.clientX}px`;
+      heartCursor.style.top = `${event.clientY}px`;
+      heartCursor.classList.add('is-visible');
+
+      if (reducedMotion || event.pointerType === 'touch') return;
+      if (lastTrailX === null || Math.hypot(event.clientX - lastTrailX, event.clientY - lastTrailY) >= 38) {
+        spawnHeart(event.clientX, event.clientY);
+        lastTrailX = event.clientX;
+        lastTrailY = event.clientY;
+      }
+    }, { passive: true });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (reducedMotion || event.pointerType === 'touch') return;
+      for (let index = 0; index < 9; index += 1) {
+        spawnHeart(event.clientX, event.clientY, index, 9);
+      }
+    });
+
+    window.addEventListener('blur', () => heartCursor.classList.remove('is-visible'));
+  </script>
+</body>
+</html>
